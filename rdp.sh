@@ -75,40 +75,33 @@ service chrome-remote-desktop start
 echo "=================================="
 echo "✅ Setup completed successfully!"
 echo "=================================="
-echo "=== Installing Google Chrome ==="
-if ! dpkg -s google-chrome-stable &>/dev/null; then
-    wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-    dpkg -i google-chrome-stable_current_amd64.deb || apt -f install -y
-fi
 
-echo "=== Configuring Chrome Remote Desktop session ==="
-echo "exec /usr/bin/xfce4-session" > /etc/chrome-remote-desktop-session
-
+# =========================
+# Disable LightDM (optional)
+# =========================
 systemctl disable lightdm.service || true
 
-echo "=== Autostart setup ==="
+# =========================
+# Autostart (NO YOUTUBE)
+# =========================
 if [ "$AUTOSTART" = true ]; then
     AUTOSTART_DIR="/home/$USERNAME/.config/autostart"
     mkdir -p "$AUTOSTART_DIR"
 
-    cat <<EOF > "$AUTOSTART_DIR/colab.desktop"
+    cat <<EOF > "$AUTOSTART_DIR/app.desktop"
 [Desktop Entry]
 Type=Application
-Name=Colab
-Exec=xdg-open https://youtu.be/d9ui27vVePY
+Name=Startup App
+Exec=xfce4-terminal
 X-GNOME-Autostart-enabled=true
 EOF
 
     chown -R "$USERNAME:$USERNAME" "/home/$USERNAME/.config"
 fi
 
-echo "=== Chrome Remote Desktop Registration ==="
-read -p "Enter CRP command: " CRP
-
-usermod -aG chrome-remote-desktop "$USERNAME"
-
-su - "$USERNAME" -c "$CRP --pin=$PIN"
-
+# =========================
+# Final CRD Start
+# =========================
 systemctl start chrome-remote-desktop
 
 echo "✅ Setup completed successfully!"
