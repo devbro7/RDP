@@ -1,40 +1,80 @@
 #!/bin/bash
 set -e
 
-# ========= CONFIG =========
+# =========================
+# CONFIG
+# =========================
 USERNAME="user"
 PASSWORD="root"
 PIN="123456"
-AUTOSTART=true
-CRP=""
 
-# ==========================
+# =========================
+# Create user
+# =========================
+echo "Creating user..."
 
-echo "=== Creating user ==="
 if ! id "$USERNAME" &>/dev/null; then
     useradd -m -s /bin/bash "$USERNAME"
     echo "$USERNAME:$PASSWORD" | chpasswd
     usermod -aG sudo "$USERNAME"
 fi
 
-echo "=== Updating system ==="
+# =========================
+# Update system
+# =========================
 apt update
 
-echo "=== Installing packages ==="
+# =========================
+# Install packages
+# =========================
 apt install -y \
     xfce4 \
     xfce4-terminal \
     desktop-base \
-    xscreensaver \
     wget \
-    curl
+    curl \
+    xscreensaver
 
-echo "=== Installing Chrome Remote Desktop ==="
-if ! dpkg -s chrome-remote-desktop &>/dev/null; then
-    wget -q https://dl.google.com/linux/direct/chrome-remote-desktop_current_amd64.deb
-    dpkg -i chrome-remote-desktop_current_amd64.deb || apt -f install -y
-fi
+# =========================
+# Install Chrome Remote Desktop
+# =========================
+wget -q https://dl.google.com/linux/direct/chrome-remote-desktop_current_amd64.deb
+dpkg -i chrome-remote-desktop_current_amd64.deb || apt -f install -y
 
+# =========================
+# Install Google Chrome
+# =========================
+wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+dpkg -i google-chrome-stable_current_amd64.deb || apt -f install -y
+
+# =========================
+# Configure CRD session
+# =========================
+echo "exec /usr/bin/xfce4-session" > /etc/chrome-remote-desktop-session
+
+# =========================
+# Permissions
+# =========================
+usermod -aG chrome-remote-desktop "$USERNAME"
+chown -R "$USERNAME:$USERNAME" "/home/$USERNAME"
+
+# =========================
+# CRD Registration
+# =========================
+echo ""
+echo "Paste your Chrome Remote Desktop command:"
+read -r CRP_CMD
+
+su - "$USERNAME" -c "$CRP_CMD --pin=$PIN"
+
+# =========================
+# Start service
+# =========================
+service chrome-remote-desktop start
+
+echo "=================================="
+echo "✅ Setup completed successfully!"
+echo "=================================="
 echo "=== Installing Google Chrome ==="
 if ! dpkg -s google-chrome-stable &>/dev/null; then
     wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
